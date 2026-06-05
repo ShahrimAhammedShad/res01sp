@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Result Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root{--bg:#101827;--card:rgba(255,255,255,.1);--line:rgba(255,255,255,.16);--txt:#f8fafc;--mut:#a8b3c7;--pri:#22c55e;--pri2:#14b8a6}
+    [data-theme=light]{--bg:#eef3f8;--card:rgba(255,255,255,.84);--line:rgba(20,32,51,.14);--txt:#142033;--mut:#64748b}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 10% 10%,rgba(34,197,94,.18),transparent 30%),linear-gradient(135deg,var(--bg),#0f172a);color:var(--txt);min-height:100vh}
+    body[data-theme=light]{background:linear-gradient(135deg,#f8fafc,#e7eef7)}input,button{font:inherit}input{width:100%;padding:13px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--txt);outline:none}.hidden{display:none!important}
+    .glass{background:var(--card);border:1px solid var(--line);backdrop-filter:blur(20px);box-shadow:0 22px 70px rgba(0,0,0,.22);border-radius:8px}.hero{min-height:42vh;display:grid;align-items:end;padding:24px}.hero-inner{width:min(1050px,100%);margin:auto;padding:40px 0}.eyebrow{color:var(--pri);font-weight:800;text-transform:uppercase;font-size:12px;margin:0 0 8px}h1,h2,h3{margin:0}h1{font-size:clamp(38px,8vw,72px);line-height:.95}h2{font-size:clamp(24px,5vw,42px)}.muted{color:var(--mut);line-height:1.6}.search{display:grid;grid-template-columns:1fr auto;gap:10px;width:min(620px,100%);margin-top:22px}.btn{border:1px solid var(--line);border-radius:8px;padding:11px 15px;font-weight:800;color:var(--txt);background:rgba(255,255,255,.08);cursor:pointer}.btn.primary{border:0;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#052e1a}
+    .shell{width:min(1120px,calc(100% - 32px));margin:0 auto 32px;display:grid;gap:16px}.panel{padding:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.result{padding:24px}.result-main{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.score{font-size:clamp(48px,12vw,88px);font-weight:900;line-height:1}.mini{display:grid;gap:10px}.item{display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.05)}.badge{display:inline-block;border-radius:999px;padding:5px 10px;background:rgba(34,197,94,.18);color:#86efac;font-weight:800;font-size:13px}.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mut);font-size:12px;text-transform:uppercase}.chart{height:280px}.toast{position:fixed;top:14px;right:14px;background:#7f1d1d;color:white;padding:12px 14px;border-radius:8px;font-weight:800;z-index:10}
+    @media(max-width:760px){.search,.grid,.result-main{grid-template-columns:1fr}.hero{padding:16px}.shell{width:calc(100% - 24px)}.tools .btn{width:100%}}@media print{.hero,.tools{display:none}.glass{box-shadow:none;background:white;color:black;border:1px solid #ddd}body{background:white;color:black}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Coaching Center</p>
+      <h1>Student Result Portal</h1>
+      <p class="muted">6 digit roll number diye published result, merit position, attendance and notices dekhen.</p>
+      <form id="searchForm" class="search"><input id="roll" maxlength="6" inputmode="numeric" placeholder="Enter 6 digit roll" required><button class="btn primary">Search</button></form>
+    </div>
+  </header>
+  <main class="shell">
+    <section id="empty" class="panel glass"><h2>Result Lookup</h2><p class="muted">Valid roll search korle result ekhane show korbe.</p></section>
+    <section id="view" class="hidden">
+      <section class="result glass">
+        <div class="result-main">
+          <div><p class="eyebrow">Latest Exam Result</p><h2 id="examName">Latest Result</h2><p id="info" class="muted"></p><div id="percent" class="score">0%</div><span id="perf" class="badge">Performance</span></div>
+          <div class="mini"><div class="item"><span>Total Marks</span><b id="total">0</b></div><div class="item"><span>Grade</span><b id="grade">F</b></div><div class="item"><span>GPA</span><b id="gpa">0</b></div><div class="item"><span>Merit Position</span><b id="merit">-</b></div></div>
+        </div>
+        <div class="tools"><button id="pdf" class="btn primary">Download PDF</button><button onclick="print()" class="btn">Print</button><button id="theme" class="btn">Light/Dark</button><a href="admin.html" class="btn">Admin Portal</a></div>
+      </section>
+      <div class="grid"><section class="panel glass"><h3>Subject Wise Marks</h3><div class="table"><table id="subjectTable"></table></div></section><section class="panel glass"><h3>Overall Performance</h3><div id="overall" class="mini"></div><div id="qr" style="margin-top:15px"></div></section></div>
+      <section class="panel glass"><h3>Progress Graph</h3><div class="chart"><canvas id="chart"></canvas></div></section>
+      <section class="panel glass"><h3>Previous Results</h3><div class="table"><table id="prev"></table></div></section>
+      <div class="grid"><section class="panel glass"><h3>Attendance</h3><div id="att" class="mini"></div></section><section class="panel glass"><h3>Notice Board</h3><div id="notices" class="mini"></div></section></div>
+    </section>
+  </main>
+  <script type="module">
+    import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import{getFirestore,collection,getDocs,query,where,orderBy,enableIndexedDbPersistence}from"https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    const firebaseConfig={apiKey:"AIzaSyCWToIqOwrxpTlU6CFN4ZT7cUHvokVATpM",authDomain:"student-result-portal-540ea.firebaseapp.com",projectId:"student-result-portal-540ea",messagingSenderId:"114495541247",appId:"1:114495541247:web:4123a0e0f8442a840c21ca"};
+    const db=getFirestore(initializeApp(firebaseConfig));enableIndexedDbPersistence(db).catch(()=>{});
+    const $=s=>document.querySelector(s),state={student:null,results:[],attendance:[],notices:[],chart:null};
+    const toast=m=>{const d=document.createElement("div");d.className="toast";d.textContent=m;document.body.append(d);setTimeout(()=>d.remove(),3000)},ok=r=>/^\d{6}$/.test(r),fmt=d=>d?new Date(d).toLocaleDateString("en-GB"):"";
+    document.body.dataset.theme=localStorage.theme||"";theme.onclick=()=>{document.body.dataset.theme=document.body.dataset.theme==="light"?"":"light";localStorage.theme=document.body.dataset.theme};
+    searchForm.onsubmit=async e=>{e.preventDefault();if(!ok(roll.value.trim()))return toast("Valid 6 digit roll din");await search(roll.value.trim())};
+    async function search(r){
+      const ss=await getDocs(query(collection(db,"students"),where("roll","==",r)));if(ss.empty){view.classList.add("hidden");empty.classList.remove("hidden");return toast("Student found hoy nai")}
+      state.student={id:ss.docs[0].id,...ss.docs[0].data()};
+      const [rs,as,ns]=await Promise.all([getDocs(query(collection(db,"results"),where("roll","==",r),where("status","==","published"))),getDocs(query(collection(db,"attendance"),where("roll","==",r))),getDocs(query(collection(db,"notices"),orderBy("createdAt","desc")))]);
+      state.results=rs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.examDate||0)-new Date(a.examDate||0));state.attendance=as.docs.map(d=>({id:d.id,...d.data()}));state.notices=ns.docs.map(d=>({id:d.id,...d.data()})).filter(n=>!n.class||n.class===state.student.class);
+      if(!state.results.length){view.classList.add("hidden");empty.classList.remove("hidden");return toast("Published result ekhono nai")}empty.classList.add("hidden");view.classList.remove("hidden");render();localStorage.lastRoll=r;
+    }
+    function render(){const r=state.results[0],s=state.student;examName.textContent=r.examName||"Latest Result";info.textContent=`${s.name} | Roll ${s.roll} | Class ${s.class} | Batch ${s.batch||"N/A"}`;percent.textContent=r.percentage+"%";total.textContent=r.total;grade.textContent=r.grade;gpa.textContent=r.gpa??"-";merit.textContent=r.meritPosition||"-";$("#perf").textContent=perfLabel(r.percentage);
+      subjectTable.innerHTML="<tr><th>Subject</th><th>Marks</th></tr>"+Object.entries(r.subjects||{}).map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("");previous();overallStats();attendanceStats();noticeList();drawChart();qrCode()}
+    const perfLabel=p=>p>=80?"Excellent":p>=60?"Good":p>=40?"Average":"Needs Improvement";
+    function previous(){prev.innerHTML="<tr><th>Exam</th><th>Date</th><th>Marks</th><th>%</th><th>Grade</th><th>Merit</th></tr>"+state.results.map(r=>`<tr><td>${r.examName}</td><td>${fmt(r.examDate)}</td><td>${r.total}</td><td>${r.percentage}%</td><td>${r.grade}</td><td>${r.meritPosition||"-"}</td></tr>`).join("")}
+    function overallStats(){const ps=state.results.map(r=>+r.percentage||0),ts=state.results.map(r=>+r.total||0),avg=ps.reduce((a,b)=>a+b,0)/ps.length,best=state.results.reduce((a,b)=>(+b.percentage>+a.percentage?b:a),state.results[0]);overall.innerHTML=`<div class="item"><span>Overall Merit</span><b>${state.results[0].overallMeritPosition||"-"}</b></div><div class="item"><span>Average</span><b>${avg.toFixed(2)}%</b></div><div class="item"><span>Total Exams</span><b>${state.results.length}</b></div><div class="item"><span>Best Exam</span><b>${best.examName}</b></div><div class="item"><span>Highest</span><b>${Math.max(...ts)}</b></div><div class="item"><span>Lowest</span><b>${Math.min(...ts)}</b></div>`}
+    function attendanceStats(){const t=state.attendance.length,p=state.attendance.filter(a=>a.status==="Present").length;att.innerHTML=`<div class="item"><span>Present</span><b>${p}</b></div><div class="item"><span>Absent</span><b>${Math.max(t-p,0)}</b></div><div class="item"><span>Attendance</span><b>${t?Math.round(p/t*100):0}%</b></div>`}
+    function noticeList(){notices.innerHTML=state.notices.slice(0,6).map(n=>`<div class="item"><span><b>${n.title}</b><br><small>${n.message}</small></span><b>${n.class||"All"}</b></div>`).join("")||"<p class='muted'>No notice</p>"}
+    function drawChart(){if(state.chart)state.chart.destroy();const rows=[...state.results].reverse();state.chart=new Chart(chart,{type:"line",data:{labels:rows.map(r=>r.examName),datasets:[{label:"Percentage",data:rows.map(r=>r.percentage),borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.16)",fill:true,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100}}}})}
+    function qrCode(){qr.innerHTML="";new QRCode(qr,{text:location.href.split("#")[0]+"#roll="+state.student.roll,width:112,height:112,colorDark:"#111827",colorLight:"#ffffff"})}
+    pdf.onclick=()=>{const r=state.results[0],s=state.student,{jsPDF}=window.jspdf,p=new jsPDF();p.setFont("helvetica","bold");p.setFontSize(18);p.text("Result Certificate",20,22);p.setFont("helvetica","normal");p.setFontSize(11);["Name: "+s.name,"Roll: "+s.roll,"Class: "+s.class,"Exam: "+r.examName,"Total: "+r.total,"Percentage: "+r.percentage+"%","Grade: "+r.grade,"Merit: "+(r.meritPosition||"-")].forEach((x,i)=>p.text(x,20,40+i*8));let y=112;Object.entries(r.subjects||{}).forEach(([a,b])=>{p.text(`${a}: ${b}`,20,y);y+=8});p.save(`${s.roll}-${r.examName}.pdf`)};
+    const hashRoll=new URLSearchParams(location.hash.replace("#","")).get("roll")||localStorage.lastRoll;if(hashRoll&&ok(hashRoll)){roll.value=hashRoll;search(hashRoll)}
+  </script>
+</body>
+</html>
